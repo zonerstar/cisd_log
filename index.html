@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#080b10">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CISD Log">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="data:application/json,{
+  %22name%22:%22CISD Trade Log%22,
+  %22short_name%22:%22CISD Log%22,
+  %22start_url%22:%22.%22,
+  %22display%22:%22standalone%22,
+  %22background_color%22:%22%23080b10%22,
+  %22theme_color%22:%22%23080b10%22,
+  %22icons%22:[{%22src%22:%22data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23080b10'/%3E%3Ctext y='.9em' font-size='80' x='10'%3E%E2%9A%97%3C/text%3E%3C/svg%3E%22,%22sizes%22:%22any%22,%22type%22:%22image/svg+xml%22}]
+}">
+
+<title>⚗ CISD Trade Log</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;800&display=swap');
+
+  :root {
+    --bg:       #080b10;
+    --surface:  #0d1117;
+    --border:   #1e2530;
+    --gold:     #c9a84c;
+    --cyan:     #00e5ff;
+    --red:      #ff3b5c;
+    --green:    #00e676;
+    --orange:   #ff9800;
+    --dim:      #3a4558;
+    --text:     #cdd6f4;
+    --muted:    #6b7a99;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 28px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 16px;
+  }
+  .header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.4rem; font-weight: 800;
+    color: var(--gold); letter-spacing: 0.05em;
+  }
+  .header .sub { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+
+  /* ── STATS ROW ── */
+  .stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px; margin-bottom: 24px;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px;
+  }
+  .stat .lbl { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .stat .val { font-size: 1.4rem; font-weight: 700; margin-top: 4px; }
+  .stat .val.green { color: var(--green); }
+  .stat .val.red   { color: var(--red); }
+  .stat .val.gold  { color: var(--gold); }
+  .stat .val.cyan  { color: var(--cyan); }
+
+  /* ── FORM ── */
+  .form-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px;
+    margin-bottom: 24px;
+  }
+  .form-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem; font-weight: 600;
+    color: var(--gold); margin-bottom: 14px;
+    text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+  }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .field select, .field input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    padding: 7px 10px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .field select:focus, .field input:focus { border-color: var(--cyan); }
+  .field input[type="number"] { -moz-appearance: textfield; }
+
+  .btn-row { margin-top: 14px; display: flex; gap: 10px; }
+  .btn {
+    padding: 9px 22px;
+    border-radius: 6px; border: none; cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem; font-weight: 600;
+    letter-spacing: 0.05em; transition: all 0.15s;
+  }
+  .btn-primary { background: var(--gold); color: #000; }
+  .btn-primary:hover { background: #e0bb5a; transform: translateY(-1px); }
+  .btn-clear { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-clear:hover { color: var(--red); border-color: var(--red); }
+
+  /* ── WR BREAKDOWN ── */
+  .breakdown {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-bottom: 24px;
+  }
+  @media (max-width: 600px) { .breakdown { grid-template-columns: 1fr; } }
+
+  .bk-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px;
+  }
+  .bk-title {
+    font-size: 0.65rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 10px;
+  }
+  .bk-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 0.72rem;
+  }
+  .bk-row:last-child { border-bottom: none; }
+  .bk-key { color: var(--muted); }
+  .bk-val { font-weight: 600; }
+  .bk-bar {
+    height: 3px; background: var(--border); border-radius: 2px;
+    margin-top: 3px; overflow: hidden;
+  }
+  .bk-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+
+  /* ── TABLE ── */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+  .table-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .table-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem; font-weight: 600;
+    color: var(--gold); text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .export-btn {
+    font-size: 0.65rem; color: var(--muted);
+    background: none; border: 1px solid var(--border);
+    padding: 4px 10px; border-radius: 4px; cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.15s;
+  }
+  .export-btn:hover { color: var(--cyan); border-color: var(--cyan); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+  th {
+    background: var(--bg); color: var(--muted);
+    font-weight: 400; font-size: 0.62rem;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 8px 12px; text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 7px; border-radius: 4px;
+    font-size: 0.65rem; font-weight: 600;
+  }
+  .tag-tp2  { background: rgba(0,230,118,0.15); color: var(--green); }
+  .tag-tp1  { background: rgba(0,230,118,0.08); color: #80e0a0; }
+  .tag-be   { background: rgba(255,152,0,0.15); color: var(--orange); }
+  .tag-sl   { background: rgba(255,59,92,0.15); color: var(--red); }
+  .tag-fire { color: #ff6b35; }
+  .tag-tp2l { color: #a78bfa; }
+  .tag-mtf  { color: var(--cyan); }
+  .tag-lq   { color: var(--green); font-size: 0.6rem; }
+  .tag-nolq { color: var(--red); font-size: 0.6rem; }
+
+  .wr-ind { display: inline-block; width: 36px; text-align: right; }
+  .wr-ind.high { color: var(--green); }
+  .wr-ind.mid  { color: var(--gold); }
+  .wr-ind.low  { color: var(--red); }
+
+  .del-btn {
+    background: none; border: none; color: var(--dim);
+    cursor: pointer; font-size: 0.8rem; padding: 2px 6px;
+    border-radius: 3px; transition: color 0.1s;
+  }
+  .del-btn:hover { color: var(--red); }
+
+  .empty { padding: 32px; text-align: center; color: var(--muted); font-size: 0.75rem; }
+
+  /* ── CALIBRATION ── */
+  .calib {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; margin-top: 16px;
+  }
+  .calib-title {
+    font-family: 'Syne', sans-serif; font-size: 0.8rem; font-weight: 600;
+    color: var(--orange); text-transform: uppercase;
+    letter-spacing: 0.1em; margin-bottom: 12px;
+  }
+  .calib-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; font-size: 0.72rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .calib-row:last-child { border-bottom: none; }
+  .calib-key { color: var(--muted); }
+  .calib-diff { font-weight: 600; }
+  /* ── MOBILE PWA ── */
+  @media (max-width: 480px) {
+    body { padding: 12px; padding-top: env(safe-area-inset-top, 12px); }
+    .form-grid { grid-template-columns: 1fr 1fr; }
+    .stats { grid-template-columns: repeat(3, 1fr); }
+    .stat .val { font-size: 1.1rem; }
+    .breakdown { grid-template-columns: 1fr; }
+    table { font-size: 0.65rem; }
+    th, td { padding: 6px 8px; }
+    .btn { padding: 10px 16px; font-size: 0.75rem; }
+    /* ซ่อน column ที่ไม่จำเป็นบน mobile */
+    table th:nth-child(3), table td:nth-child(3),
+    table th:nth-child(9), table td:nth-child(9) { display: none; }
+  }
+
+  /* bottom safe area for iPhone */
+  .btn-row { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+  /* ── INSTALL BANNER ── */
+  #install_banner {
+    display: none;
+    background: var(--surface); border: 1px solid var(--gold);
+    border-radius: 10px; padding: 12px 16px;
+    margin-bottom: 16px;
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 10px;
+  }
+  #install_banner.hidden { display: none; }
+  #install_banner .msg { font-size: 0.72rem; color: var(--text); }
+  #install_banner .msg span { color: var(--gold); font-weight: 600; }
+  #install_banner button {
+    background: var(--gold); color: #000;
+    border: none; border-radius: 6px;
+    padding: 7px 14px; font-size: 0.72rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  #install_banner .dismiss {
+    background: none; color: var(--muted); border: none;
+    cursor: pointer; font-size: 1rem; padding: 0 4px;
+  }
+
+  .diff-ok  { color: var(--green); }
+  .diff-warn { color: var(--orange); }
+  .diff-bad  { color: var(--red); }
+</style>
+</head>
+<body>
+
+
+<div id="install_banner" class="hidden">
+  <div class="msg">📱 <span>Add to Home Screen</span> เพื่อใช้เป็นแอพได้เลย</div>
+  <button id="install_btn">Install</button>
+  <button class="dismiss" onclick="dismissBanner()">✕</button>
+</div>
+<div class="header">
+  <div>
+    <h1>⚗ CISD Trade Log</h1>
+    <div class="sub">v5.6 · WR Calibration Tracker · NQ / GC / ES</div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats" id="stats"></div>
+
+<!-- FORM -->
+<div class="form-wrap">
+  <div class="form-title">+ Log Trade</div>
+  <div class="form-grid">
+    <div class="field">
+      <label>Date</label>
+      <input type="date" id="f_date">
+    </div>
+    <div class="field">
+      <label>Symbol</label>
+      <select id="f_sym">
+        <option>NQ</option><option>MNQ</option>
+        <option>GC</option><option>MGC</option>
+        <option>ES</option><option>MES</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>TF</label>
+      <select id="f_tf">
+        <option>1H</option><option>15m</option><option>4H</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Pattern</label>
+      <select id="f_pat">
+        <option>3C</option><option>4C</option><option>5C</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Direction</label>
+      <select id="f_dir">
+        <option>BUY</option><option>SELL</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>WR Shown %</label>
+      <input type="number" id="f_wr" placeholder="87" min="40" max="100">
+    </div>
+    <div class="field">
+      <label>Flags</label>
+      <select id="f_flags" multiple style="height:64px">
+        <option value="🔥">🔥 Fire</option>
+        <option value="💪">💪 TP2L</option>
+        <option value="🔗">🔗 MTF</option>
+        <option value="✅LQ">✅LQ</option>
+        <option value="👁NoLQ">👁 NoLQ</option>
+        <option value="⚠️Wide">⚠️ Wide</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Result</label>
+      <select id="f_res">
+        <option value="TP2">✅ TP2</option>
+        <option value="TP1">📌 TP1 only</option>
+        <option value="BE">🔒 BE</option>
+        <option value="SL">❌ SL</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>R Result</label>
+      <input type="number" id="f_r" placeholder="+2.0" step="0.1">
+    </div>
+    <div class="field">
+      <label>Session</label>
+      <select id="f_sess">
+        <option>Overlap</option><option>London</option>
+        <option>NY PM</option><option>Asian</option>
+      </select>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="addTrade()">+ Add Trade</button>
+    <button class="btn btn-clear" onclick="clearForm()">Clear</button>
+  </div>
+</div>
+
+<!-- BREAKDOWN -->
+<div class="breakdown">
+  <div class="bk-card" id="bk_pattern">
+    <div class="bk-title">WR by Pattern</div>
+  </div>
+  <div class="bk-card" id="bk_flag">
+    <div class="bk-title">WR by Flag</div>
+  </div>
+  <div class="bk-card" id="bk_sess">
+    <div class="bk-title">WR by Session</div>
+  </div>
+  <div class="bk-card" id="bk_dir">
+    <div class="bk-title">WR by Direction</div>
+  </div>
+</div>
+
+<!-- TABLE -->
+<div class="table-wrap">
+  <div class="table-header">
+    <div class="table-title">Trade History</div>
+    <button class="export-btn" onclick="exportCSV()">Export CSV</button>
+  </div>
+  <div id="table_body"></div>
+</div>
+
+<!-- CALIBRATION -->
+<div class="calib" id="calib_wrap" style="display:none">
+  <div class="calib-title">⚠️ WR Calibration — Indicator vs Live</div>
+  <div id="calib_rows"></div>
+</div>
+
+<script>
+const STORAGE_KEY = 'cisd_trades_v1';
+
+// ── Data ──────────────────────────────────────────────────
+function load() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch { return []; }
+}
+function save(trades) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
+}
+
+// ── Init form date ────────────────────────────────────────
+document.getElementById('f_date').value = new Date().toISOString().slice(0,10);
+
+// ── Add Trade ─────────────────────────────────────────────
+function addTrade() {
+  const flags = [...document.getElementById('f_flags').selectedOptions].map(o=>o.value);
+  const wr    = parseFloat(document.getElementById('f_wr').value);
+  const r     = parseFloat(document.getElementById('f_r').value);
+  if (!wr || isNaN(wr)) { alert('กรอก WR Shown % ด้วยครับ'); return; }
+
+  const trade = {
+    id:    Date.now(),
+    date:  document.getElementById('f_date').value,
+    sym:   document.getElementById('f_sym').value,
+    tf:    document.getElementById('f_tf').value,
+    pat:   document.getElementById('f_pat').value,
+    dir:   document.getElementById('f_dir').value,
+    wr:    wr,
+    flags: flags,
+    res:   document.getElementById('f_res').value,
+    r:     isNaN(r) ? (document.getElementById('f_res').value === 'TP2' ? 2 : document.getElementById('f_res').value === 'TP1' ? 1 : document.getElementById('f_res').value === 'BE' ? 0 : -1) : r,
+    sess:  document.getElementById('f_sess').value,
+  };
+
+  const trades = load();
+  trades.unshift(trade);
+  save(trades);
+  render();
+  clearForm();
+}
+
+function deleteTrade(id) {
+  if (!confirm('ลบ trade นี้?')) return;
+  save(load().filter(t => t.id !== id));
+  render();
+}
+
+function clearForm() {
+  document.getElementById('f_wr').value = '';
+  document.getElementById('f_r').value  = '';
+  document.getElementById('f_res').value = 'TP2';
+  document.getElementById('f_flags').selectedIndex = -1;
+}
+
+// ── Stats ─────────────────────────────────────────────────
+function render() {
+  const trades = load();
+  renderStats(trades);
+  renderBreakdown(trades);
+  renderTable(trades);
+  renderCalib(trades);
+}
+
+function renderStats(trades) {
+  if (!trades.length) {
+    document.getElementById('stats').innerHTML = '<div class="stat"><div class="lbl">No trades yet</div></div>';
+    return;
+  }
+  const wins  = trades.filter(t => t.res === 'TP2' || t.res === 'TP1').length;
+  const tp2s  = trades.filter(t => t.res === 'TP2').length;
+  const totalR = trades.reduce((s,t) => s + t.r, 0);
+  const wr    = wins / trades.length * 100;
+  const avgWRshown = trades.reduce((s,t) => s+t.wr, 0) / trades.length;
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="lbl">Total Trades</div><div class="val gold">${trades.length}</div></div>
+    <div class="stat"><div class="lbl">Live WR</div><div class="val ${wr>=60?'green':wr>=50?'gold':'red'}">${wr.toFixed(1)}%</div></div>
+    <div class="stat"><div class="lbl">TP2 Rate</div><div class="val cyan">${(tp2s/trades.length*100).toFixed(1)}%</div></div>
+    <div class="stat"><div class="lbl">Total R</div><div class="val ${totalR>=0?'green':'red'}">${totalR>=0?'+':''}${totalR.toFixed(1)}R</div></div>
+    <div class="stat"><div class="lbl">Avg WR Shown</div><div class="val gold">${avgWRshown.toFixed(0)}%</div></div>
+    <div class="stat"><div class="lbl">Avg R/Trade</div><div class="val ${totalR/trades.length>=0?'green':'red'}">${(totalR/trades.length>=0?'+':'')}${(totalR/trades.length).toFixed(2)}R</div></div>
+  `;
+}
+
+function wrOf(subset) {
+  if (!subset.length) return null;
+  const w = subset.filter(t => t.res==='TP2'||t.res==='TP1').length;
+  return (w/subset.length*100).toFixed(1);
+}
+
+function bkRows(groups, trades, colorFn) {
+  return groups.map(g => {
+    const sub = trades.filter(g.filter);
+    const wr  = wrOf(sub);
+    if (!sub.length) return '';
+    const c   = colorFn ? colorFn(parseFloat(wr)) : (parseFloat(wr)>=60?'var(--green)':parseFloat(wr)>=50?'var(--gold)':'var(--red)');
+    return `
+      <div class="bk-row">
+        <span class="bk-key">${g.label}</span>
+        <span class="bk-val" style="color:${c}">${wr}% <span style="color:var(--muted);font-weight:400">(${sub.length})</span></span>
+      </div>
+      <div class="bk-bar"><div class="bk-bar-fill" style="width:${wr}%;background:${c}"></div></div>
+    `;
+  }).join('');
+}
+
+function renderBreakdown(trades) {
+  if (!trades.length) return;
+
+  document.getElementById('bk_pattern').innerHTML = `<div class="bk-title">WR by Pattern</div>` +
+    bkRows([
+      {label:'5C', filter: t=>t.pat==='5C'},
+      {label:'4C', filter: t=>t.pat==='4C'},
+      {label:'3C', filter: t=>t.pat==='3C'},
+    ], trades);
+
+  document.getElementById('bk_flag').innerHTML = `<div class="bk-title">WR by Flag</div>` +
+    bkRows([
+      {label:'🔥+💪+🔗', filter: t=>t.flags.includes('🔥')&&t.flags.includes('💪')&&t.flags.includes('🔗')},
+      {label:'🔥+💪',    filter: t=>t.flags.includes('🔥')&&t.flags.includes('💪')},
+      {label:'🔥 only',  filter: t=>t.flags.includes('🔥')&&!t.flags.includes('💪')},
+      {label:'✅LQ',     filter: t=>t.flags.includes('✅LQ')},
+      {label:'👁 NoLQ',  filter: t=>t.flags.includes('👁NoLQ')},
+    ], trades);
+
+  document.getElementById('bk_sess').innerHTML = `<div class="bk-title">WR by Session</div>` +
+    bkRows([
+      {label:'Overlap',filter:t=>t.sess==='Overlap'},
+      {label:'London', filter:t=>t.sess==='London'},
+      {label:'NY PM',  filter:t=>t.sess==='NY PM'},
+      {label:'Asian',  filter:t=>t.sess==='Asian'},
+    ], trades);
+
+  document.getElementById('bk_dir').innerHTML = `<div class="bk-title">WR by Direction</div>` +
+    bkRows([
+      {label:'BUY',  filter:t=>t.dir==='BUY'},
+      {label:'SELL', filter:t=>t.dir==='SELL'},
+    ], trades);
+}
+
+function renderTable(trades) {
+  if (!trades.length) {
+    document.getElementById('table_body').innerHTML = '<div class="empty">No trades logged yet — add your first trade above</div>';
+    return;
+  }
+  const rows = trades.map(t => {
+    const resTag = {
+      TP2: `<span class="tag tag-tp2">✅TP2</span>`,
+      TP1: `<span class="tag tag-tp1">📌TP1</span>`,
+      BE:  `<span class="tag tag-be">🔒BE</span>`,
+      SL:  `<span class="tag tag-sl">❌SL</span>`,
+    }[t.res] || t.res;
+    const wrCls = t.wr >= 85 ? 'high' : t.wr >= 70 ? 'mid' : 'low';
+    const flagHtml = t.flags.map(f =>
+      f === '👁NoLQ' ? `<span class="tag-nolq">${f}</span>` :
+      f.includes('LQ') ? `<span class="tag-lq">${f}</span>` :
+      f === '🔥' ? `<span class="tag-fire">${f}</span>` :
+      f === '💪' ? `<span class="tag-tp2l">${f}</span>` :
+      f === '🔗' ? `<span class="tag-mtf">${f}</span>` : f
+    ).join(' ');
+    const rCol = t.r >= 0 ? 'var(--green)' : 'var(--red)';
+    return `<tr>
+      <td style="color:var(--muted)">${t.date.slice(5)}</td>
+      <td style="color:var(--gold)">${t.sym}</td>
+      <td style="color:var(--muted)">${t.tf}</td>
+      <td>${t.pat} <span style="color:${t.dir==='BUY'?'var(--cyan)':'var(--red)';}">${t.dir}</span></td>
+      <td>${flagHtml}</td>
+      <td><span class="wr-ind ${wrCls}">${t.wr}%</span></td>
+      <td>${resTag}</td>
+      <td style="color:${rCol};font-weight:600">${t.r>=0?'+':''}${t.r}R</td>
+      <td style="color:var(--muted)">${t.sess}</td>
+      <td><button class="del-btn" onclick="deleteTrade(${t.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('table_body').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Date</th><th>Sym</th><th>TF</th><th>Pattern</th>
+        <th>Flags</th><th>WR%</th><th>Result</th><th>R</th><th>Session</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ── Calibration: indicator WR vs live WR by bucket ────────
+function renderCalib(trades) {
+  if (trades.length < 10) {
+    document.getElementById('calib_wrap').style.display = 'none';
+    return;
+  }
+  // bucket by WR shown range
+  const buckets = [
+    {lbl:'A+ ≥90%', filter: t=>t.wr>=90},
+    {lbl:'A 80-89%', filter: t=>t.wr>=80&&t.wr<90},
+    {lbl:'B 70-79%', filter: t=>t.wr>=70&&t.wr<80},
+    {lbl:'C <70%',   filter: t=>t.wr<70},
+  ];
+  const rows = buckets.map(b => {
+    const sub = trades.filter(b.filter);
+    if (!sub.length) return '';
+    const liveWR = parseFloat(wrOf(sub));
+    const avgShown = sub.reduce((s,t)=>s+t.wr,0)/sub.length;
+    const diff = liveWR - avgShown;
+    const cls = Math.abs(diff) <= 5 ? 'diff-ok' : Math.abs(diff) <= 10 ? 'diff-warn' : 'diff-bad';
+    const note = Math.abs(diff) <= 5 ? '✅ Calibrated' : diff > 0 ? '📈 Under-estimated' : '📉 Over-estimated';
+    return `<div class="calib-row">
+      <span class="calib-key">${b.lbl} (n=${sub.length})</span>
+      <span style="color:var(--muted)">${avgShown.toFixed(0)}% shown → <strong style="color:var(--text)">${liveWR}% live</strong></span>
+      <span class="calib-diff ${cls}">${diff>=0?'+':''}${diff.toFixed(1)}% ${note}</span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('calib_rows').innerHTML = rows;
+  document.getElementById('calib_wrap').style.display = 'block';
+}
+
+// ── Export CSV ────────────────────────────────────────────
+function exportCSV() {
+  const trades = load();
+  if (!trades.length) { alert('ไม่มี trade ให้ export'); return; }
+  const header = 'Date,Symbol,TF,Pattern,Direction,Flags,WR_Shown,Result,R,Session';
+  const rows = trades.map(t =>
+    `${t.date},${t.sym},${t.tf},${t.pat},${t.dir},"${t.flags.join(' ')}",${t.wr},${t.res},${t.r},${t.sess}`
+  );
+  const csv = [header, ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `cisd_trades_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ── Init ──────────────────────────────────────────────────
+render();
+
+// ── PWA Service Worker (offline support) ──────────────────
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE = 'cisd-v1';
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html'])));
+    });
+    self.addEventListener('fetch', e => {
+      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+    });
+  `;
+  const blob = new Blob([swCode], {type: 'application/javascript'});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+
+// ── Install prompt ─────────────────────────────────────────
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // แสดง banner ถ้ายังไม่เคย dismiss
+  if (!localStorage.getItem('cisd_banner_dismissed')) {
+    document.getElementById('install_banner').classList.remove('hidden');
+  }
+});
+
+document.getElementById('install_btn')?.addEventListener('click', async () => {
+  if (!deferredPrompt) {
+    // iOS — แสดง instruction
+    alert('บน iPhone:\n1. กด Share (□↑)\n2. เลือก "Add to Home Screen"\n3. กด Add');
+    return;
+  }
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') dismissBanner();
+  deferredPrompt = null;
+});
+
+function dismissBanner() {
+  document.getElementById('install_banner').classList.add('hidden');
+  localStorage.setItem('cisd_banner_dismissed', '1');
+}
+
+// iOS standalone detection
+if (window.navigator.standalone) {
+  document.getElementById('install_banner').classList.add('hidden');
+}
+
+// แสดง install hint บน iOS ถ้ายังไม่ install และยังไม่ dismiss
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone = window.navigator.standalone;
+if (isIOS && !isStandalone && !localStorage.getItem('cisd_banner_dismissed')) {
+  document.getElementById('install_banner').classList.remove('hidden');
+  document.getElementById('install_btn').textContent = 'วิธี Install';
+}
+
+</script>
+</body>
+</html>
